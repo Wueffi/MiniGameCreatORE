@@ -1,0 +1,11 @@
+name: MiniGameCreatORE
+version: '1.0-SNAPSHOT'
+main: wueffi.miniGameCreatORE.MiniGameCreatORE
+api-version: '1.21'
+load: STARTUP
+authors: ["Waffle [Wueffi]"]
+description: Create MiniGames while still ingame!
+commands:
+  mgcreator:
+    description: Main minigame creation command.
+    usage: /mgcreator <subcommand>
