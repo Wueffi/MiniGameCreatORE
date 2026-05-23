@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 
 public class GameConfig {
 
@@ -67,12 +68,23 @@ public class GameConfig {
         return config.getString(path);
     }
 
-    public int getInt(String path) {
-        return config.getInt(path);
+    public void addListOption(String path, String value) {
+        List<String> list = config.getStringList(path);
+        if (!list.contains(value)) {
+            list.add(value);
+            config.set(path, list);
+        }
     }
 
-    public boolean getBoolean(String path) {
-        return config.getBoolean(path);
+    public void removeListOption(String path, String value) {
+        List<String> list = config.getStringList(path);
+        if (list.remove(value)) {
+            config.set(path, list);
+        }
+    }
+
+    public boolean isInList(String path, String value) {
+        return config.getStringList(path).contains(value);
     }
 
     public void save() {

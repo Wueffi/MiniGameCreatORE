@@ -1,9 +1,11 @@
 package wueffi.miniGameCreatORE.commands;
 
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.jetbrains.annotations.NotNull;
 import wueffi.miniGameCreatORE.MiniGameCreatORE;
 import wueffi.miniGameCreatORE.managers.ConfigManager;
@@ -12,16 +14,35 @@ import wueffi.miniGameCreatORE.utils.GameConfig;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
 import static wueffi.miniGameCreatORE.MiniGameCreatORE.sendMGCError;
+import static wueffi.miniGameCreatORE.MiniGameCreatORE.sendMGCInfo;
 
 public final class GameCommand implements CommandExecutor {
     private final MiniGameCreatORE plugin;
     private final ConfigManager configManager;
     private static final HashMap<String, String> commandsPermissions = new HashMap<>();
-    private static List<String> validSettings = new ArrayList<>();
+
+    private static final List<String> validSettings = new ArrayList<>();
+    private static final List<String> booleanSettings = new ArrayList<>();
+    private static final List<String> integerSettings = new ArrayList<>();
+    private static final List<String> blockSettings = new ArrayList<>();
+    private static final List<String> itemSettings = new ArrayList<>();
+
+    public static final List<String> allBlocks = Arrays.stream(Material.values())
+            .filter(Material::isBlock)
+            .map(m -> m.name().toLowerCase())
+            .toList();
+    public static final List<String> allDamageCauses = Arrays.stream(EntityDamageEvent.DamageCause.values())
+            .map(d -> d.name().toLowerCase())
+            .toList();
+    public static final List<String> allItems = Arrays.stream(Material.values())
+            .filter(Material::isItem)
+            .map(m -> m.name().toLowerCase())
+            .toList();
 
     public GameCommand(MiniGameCreatORE plugin, ConfigManager configManager) {
         this.plugin = plugin;
@@ -37,6 +58,7 @@ public final class GameCommand implements CommandExecutor {
         }
         return commandsPermissions;
     }
+
     public static @NotNull List<String> getValidSettings() {
         if (validSettings.isEmpty()) {
             validSettings.add("maxPlayers");
@@ -58,6 +80,46 @@ public final class GameCommand implements CommandExecutor {
             validSettings.add("allowOpeningContainers");
         }
         return validSettings;
+    }
+
+    public static @NotNull List<String> getBooleanSettings() {
+        if (booleanSettings.isEmpty()) {
+            booleanSettings.add("respawnMode");
+            booleanSettings.add("doDurability");
+            booleanSettings.add("allowPVP");
+            booleanSettings.add("allowFriendlyFire");
+            booleanSettings.add("allowCrafting");
+            booleanSettings.add("silenceDeathMessages");
+            booleanSettings.add("doHunger");
+            booleanSettings.add("allowOpeningContainers");
+        }
+        return booleanSettings;
+    }
+
+    public static @NotNull List<String> getIntegerSettings() {
+        if (integerSettings.isEmpty()) {
+            integerSettings.add("maxPlayers");
+            integerSettings.add("teams");
+            integerSettings.add("minPlayers");
+            integerSettings.add("respawnDelay");
+            integerSettings.add("timeLimit");
+        }
+        return integerSettings;
+    }
+
+    public static @NotNull List<String> getBlockSettings() {
+        if (blockSettings.isEmpty()) {
+            blockSettings.add("allowed_break_blocks");
+            blockSettings.add("allowed_place_blocks");
+        }
+        return blockSettings;
+    }
+
+    public static @NotNull List<String> getItemSettings() {
+        if (itemSettings.isEmpty()) {
+            itemSettings.add("inventory");
+        }
+        return itemSettings;
     }
 
     @Override
@@ -154,10 +216,69 @@ public final class GameCommand implements CommandExecutor {
                     return true;
                 }
 
-                config.set(setting, value);
-                config.save();
-
-                player.sendMessage("Set " + setting + " to " + value);
+                if (getBooleanSettings().contains(setting)) {
+                    if (!(value.equals("false") || value.equals("true"))) {
+                        sendMGCError(player, "Not a valid value! Allowed: Boolean");
+                        return true;
+                    }
+                    config.set(setting, value);
+                    config.save();
+                    sendMGCInfo(player, "Set " + setting + " to " + value + "!");
+                }
+                else if (getIntegerSettings().contains(setting)) {
+                    try {
+                        Integer.parseInt(value);
+                    } catch (NumberFormatException e) {
+                        sendMGCError(player, "Not a valid value! Allowed: Integer");
+                        return true;
+                    }
+                    config.set(setting, value);
+                    config.save();
+                    sendMGCInfo(player, "Set " + setting + " to " + value + "!");
+                }
+                else if (getBlockSettings().contains(setting)) {
+                    if (!allBlocks.contains(value)) {
+                        sendMGCError(player, "Not a valid value! Allowed: Block");
+                        return true;
+                    }
+                    if (config.isInList(setting, value)) {
+                        config.removeListOption(setting, value);
+                        sendMGCInfo(player, "Removed " + value + " from " + setting + "!");
+                    } else {
+                        config.addListOption(setting, value);
+                        sendMGCInfo(player, "Added " + value + " to " + setting + "!");
+                    }
+                    return true;
+                }
+                else if (getItemSettings().contains(setting)) {
+                    if (!allItems.contains(value)) {
+                        sendMGCError(player, "Not a valid value! Allowed: Item");
+                        return true;
+                    }
+                    if (config.isInList(setting, value)) {
+                        config.removeListOption(setting, value);
+                        sendMGCInfo(player, "Removed " + value + " from " + setting + "!");
+                    } else {
+                        config.addListOption(setting, value);
+                        sendMGCInfo(player, "Added " + value + " to " + setting + "!");
+                    }
+                    return true;
+                }
+                else {
+                    if (!allDamageCauses.contains(value)) {
+                        sendMGCError(player, "args[1]: " + args[1]);
+                        sendMGCError(player, "Not a valid value! Allowed: Damage Cause");
+                        return true;
+                    }
+                    if (config.isInList(setting, value)) {
+                        config.removeListOption(setting, value);
+                        sendMGCInfo(player, "Removed " + value + " from " + setting + "!");
+                    } else {
+                        config.addListOption(setting, value);
+                        sendMGCInfo(player, "Added " + value + " to " + setting + "!");
+                    }
+                    return true;
+                }
                 break;
 
             case "delete":

@@ -8,9 +8,9 @@ import org.jetbrains.annotations.NotNull;
 import wueffi.miniGameCreatORE.MiniGameCreatORE;
 import wueffi.miniGameCreatORE.commands.GameCommand;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import static wueffi.miniGameCreatORE.commands.GameCommand.*;
 
 public final class GameCommandTabCompleter implements TabCompleter {
 
@@ -47,9 +47,7 @@ public final class GameCommandTabCompleter implements TabCompleter {
                 case "create":
                     return List.of("<gameName>");
                 case "editconfig":
-                    return GameCommand.getValidSettings().stream()
-                            .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))
-                            .toList();
+                    return GameCommand.getValidSettings();
             }
         }
 
@@ -59,7 +57,12 @@ public final class GameCommandTabCompleter implements TabCompleter {
             }
 
             if (subcmd.equals("editconfig")) {
-                return List.of("<value>");
+                if (getBooleanSettings().contains(args[1])) return List.of("true", "false");
+                if (getIntegerSettings().contains(args[1])) return List.of("<int>");
+                if (getBlockSettings().contains(args[1])) return allBlocks;
+                if (getItemSettings().contains(args[1])) return allItems;
+                if (Objects.equals(args[1], "blocked_damage_causes")) return allDamageCauses;
+                return List.of("<Config Option not known!>");
             }
         }
 
