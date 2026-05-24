@@ -1,10 +1,14 @@
 package wueffi.miniGameCreatORE.managers;
 
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import wueffi.miniGameCreatORE.MiniGameCreatORE;
 import wueffi.miniGameCreatORE.utils.GameConfig;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ConfigManager {
@@ -42,7 +46,23 @@ public class ConfigManager {
         return loadedConfigs.get(folder.getName());
     }
 
-    public Map<String, GameConfig> getLoadedConfigs() {
-        return loadedConfigs;
+    public void addMGCGame(String name) {
+        File mgcConfig = new File(plugin.getDataFolder().getParentFile(), "MiniGameCore/config.yml");
+        if (!mgcConfig.exists()) {
+            plugin.getLogger().severe("MiniGameCore/config.yml not found!");
+            return;
+        }
+
+        FileConfiguration config = YamlConfiguration.loadConfiguration(mgcConfig);
+        List<String> games = config.getStringList("available-games");
+        if (!games.contains(name)) {
+            games.add(name);
+            config.set("available-games", games);
+            try {
+                config.save(mgcConfig);
+            } catch (IOException e) {
+                plugin.getLogger().severe("Failed to save MiniGameCore config: " + e.getMessage());
+            }
+        }
     }
 }

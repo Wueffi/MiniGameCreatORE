@@ -1,5 +1,7 @@
 package wueffi.miniGameCreatORE.commands;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -54,7 +56,9 @@ public final class GameCommand implements CommandExecutor {
             commandsPermissions.put("create", "mgcreator.create");
             commandsPermissions.put("resume", "mgcreator.create");
             commandsPermissions.put("editconfig", "mgcreator.create");
+            commandsPermissions.put("showconfig", "mgcreator.create");
             commandsPermissions.put("delete", "mgcreator.create");
+            commandsPermissions.put("publish", "mgcreator.publish");
         }
         return commandsPermissions;
     }
@@ -171,7 +175,10 @@ public final class GameCommand implements CommandExecutor {
                     sendMGCError(player, "You already have a draft! Use \"/mgcreator resume\" to resume editing!");
                     return true;
                 }
-
+                if (plugin.loadGameDrafts().containsValue(args[1] + "_world")) {
+                    sendMGCError(player, "There is already a draft using this name!");
+                    return true;
+                }
                 if (!WorldManager.createWorld(player, args[1], Integer.parseInt(args[2]))) {
                     sendMGCError(player, "Could not start World-Creation!");
                     return true;
@@ -217,11 +224,12 @@ public final class GameCommand implements CommandExecutor {
                 }
 
                 if (getBooleanSettings().contains(setting)) {
-                    if (!(value.equals("false") || value.equals("true"))) {
+                    if (!(value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false"))) {
                         sendMGCError(player, "Not a valid value! Allowed: Boolean");
                         return true;
                     }
-                    config.set(setting, value);
+                    Boolean value2 = Boolean.parseBoolean(value);
+                    config.set("game." + setting, value2);
                     config.save();
                     sendMGCInfo(player, "Set " + setting + " to " + value + "!");
                 }
@@ -232,7 +240,7 @@ public final class GameCommand implements CommandExecutor {
                         sendMGCError(player, "Not a valid value! Allowed: Integer");
                         return true;
                     }
-                    config.set(setting, value);
+                    config.set("game." + setting, Integer.parseInt(value));
                     config.save();
                     sendMGCInfo(player, "Set " + setting + " to " + value + "!");
                 }
@@ -241,11 +249,11 @@ public final class GameCommand implements CommandExecutor {
                         sendMGCError(player, "Not a valid value! Allowed: Block");
                         return true;
                     }
-                    if (config.isInList(setting, value)) {
-                        config.removeListOption(setting, value);
-                        sendMGCInfo(player, "Removed " + value + " from " + setting + "!");
+                    if (config.isInList("game." + setting, value)) {
+                        config.removeListOption("game." + setting, value);
+                        sendMGCError(player, "Removed " + value + " from " + setting + "!");
                     } else {
-                        config.addListOption(setting, value);
+                        config.addListOption("game." + setting, value);
                         sendMGCInfo(player, "Added " + value + " to " + setting + "!");
                     }
                     return true;
@@ -255,29 +263,64 @@ public final class GameCommand implements CommandExecutor {
                         sendMGCError(player, "Not a valid value! Allowed: Item");
                         return true;
                     }
-                    if (config.isInList(setting, value)) {
-                        config.removeListOption(setting, value);
-                        sendMGCInfo(player, "Removed " + value + " from " + setting + "!");
+                    if (config.isInList("game." + setting, value)) {
+                        config.removeListOption("game." + setting, value);
+                        sendMGCError(player, "Removed " + value + " from " + setting + "!");
                     } else {
-                        config.addListOption(setting, value);
+                        config.addListOption("game." + setting, value);
                         sendMGCInfo(player, "Added " + value + " to " + setting + "!");
                     }
                     return true;
                 }
                 else {
                     if (!allDamageCauses.contains(value)) {
-                        sendMGCError(player, "args[1]: " + args[1]);
                         sendMGCError(player, "Not a valid value! Allowed: Damage Cause");
                         return true;
                     }
-                    if (config.isInList(setting, value)) {
-                        config.removeListOption(setting, value);
-                        sendMGCInfo(player, "Removed " + value + " from " + setting + "!");
+                    if (config.isInList("game." + setting, value)) {
+                        config.removeListOption("game." + setting, value);
+                        sendMGCError(player, "Removed " + value + " from " + setting + "!");
                     } else {
-                        config.addListOption(setting, value);
+                        config.addListOption("game." + setting, value);
                         sendMGCInfo(player, "Added " + value + " to " + setting + "!");
                     }
                     return true;
+                }
+                break;
+
+            case "showconfig":
+                if (!plugin.loadGameDrafts().containsKey(player.getUniqueId())) {
+                    sendMGCError(player, "You don't have a draft yet! Use \"/mgcreator create\" to create one!");
+                    return true;
+                }
+
+                target = plugin.loadGameDrafts().get(player.getUniqueId());
+                folder = new File(plugin.getDataFolder(), "gameWorlds/" + target);
+                GameConfig showConfig = configManager.getConfigFromFolder(folder);
+
+                player.sendMessage(Component.text("--- Game Config ---").color(NamedTextColor.GOLD));
+
+                for (String s : getValidSettings()) {
+                    Object val = showConfig.get("game." + s);
+                    if (val == null) continue;
+
+                    if (val instanceof List<?> list) {
+                        player.sendMessage(Component.text(s + ":").color(NamedTextColor.YELLOW));
+                        for (Object item : list) {
+                            String itemStr = item.toString();
+                            Component removeButton = Component.text(" [remove]")
+                                    .color(NamedTextColor.RED)
+                                    .clickEvent(net.kyori.adventure.text.event.ClickEvent.suggestCommand("/mgcreator editconfig " + s + " " + itemStr))
+                                    .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(Component.text("Click to remove " + itemStr)));
+                            player.sendMessage(Component.text("  - " + itemStr).color(NamedTextColor.WHITE).append(removeButton));
+                        }
+                    } else {
+                        Component editButton = Component.text(" [edit]")
+                                .color(NamedTextColor.AQUA)
+                                .clickEvent(net.kyori.adventure.text.event.ClickEvent.suggestCommand("/mgcreator editconfig " + s + " " + val))
+                                .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(Component.text("Click to edit " + s)));
+                        player.sendMessage(Component.text(s + ": ").color(NamedTextColor.YELLOW).append(Component.text(val.toString()).color(NamedTextColor.WHITE)).append(editButton));
+                    }
                 }
                 break;
 
@@ -294,6 +337,42 @@ public final class GameCommand implements CommandExecutor {
                     return true;
                 }
                 plugin.removeGameDraft(player.getUniqueId());
+                sendMGCInfo(player, "Sucessfully deleted draft: " + target);
+                break;
+
+            case "publish":
+                if (args.length < 2) {
+                    sendMGCError(player, "Usage: /mgcreator publish <player>");
+                    return true;
+                }
+
+                Player targetPlayer = plugin.getServer().getPlayerExact(args[1]);
+                if (targetPlayer == null) {
+                    sendMGCError(player, "Player " + args[1] + " is not online!");
+                    return true;
+                }
+
+                if (!plugin.loadGameDrafts().containsKey(targetPlayer.getUniqueId())) {
+                    sendMGCError(player, targetPlayer.getName() + " doesn't have a draft!");
+                    return true;
+                }
+
+                target = plugin.loadGameDrafts().get(targetPlayer.getUniqueId());
+                folder = new File(plugin.getDataFolder(), "gameWorlds/" + target);
+
+                WorldManager worldManager = new WorldManager();
+                if (!worldManager.saveAndCleanWorld(folder)) {
+                    sendMGCError(player, "Could not publish " + targetPlayer.getName() + "'s draft!");
+                    return true;
+                }
+
+                String game = target.replace("_world", "");
+
+                configManager.addMGCGame(game);
+
+                plugin.removeGameDraft(targetPlayer.getUniqueId());
+                sendMGCInfo(player, "Published " + game + " successfully!");
+                sendMGCInfo(targetPlayer, "Your draft " + game + " was published by " + player.getName() + "!");
                 break;
         }
 

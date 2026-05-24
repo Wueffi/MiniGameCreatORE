@@ -108,6 +108,16 @@ public class WorldManager {
         Bukkit.unloadWorld(world, false);
 
         stripPlayerData(folder);
+
+        File destination = new File(plugin.getDataFolder().getParentFile(), "MiniGameCore/MiniGames/" + folder.getName());
+        destination.mkdirs();
+
+        try {
+            Files.move(folder.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            plugin.getLogger().severe("Failed to move world to gameWorlds: " + e.getMessage());
+        }
+
         return true;
     }
 
@@ -199,6 +209,16 @@ public class WorldManager {
             if (folder.exists() && folder.isDirectory()) {
                 deleteFolderRecursive(folder);
             }
+        }
+
+        File sessionLock = new File(worldFolder, "session.lock");
+        if (sessionLock.exists()) {
+            sessionLock.delete();
+        }
+
+        File uidFile = new File(worldFolder, "uid.dat");
+        if (uidFile.exists()) {
+            uidFile.delete();
         }
     }
 

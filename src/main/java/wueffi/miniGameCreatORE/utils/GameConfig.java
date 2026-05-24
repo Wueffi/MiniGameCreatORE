@@ -73,6 +73,7 @@ public class GameConfig {
         if (!list.contains(value)) {
             list.add(value);
             config.set(path, list);
+            saveWithQuotedLists();
         }
     }
 
@@ -80,11 +81,22 @@ public class GameConfig {
         List<String> list = config.getStringList(path);
         if (list.remove(value)) {
             config.set(path, list);
+            saveWithQuotedLists();
         }
     }
 
     public boolean isInList(String path, String value) {
         return config.getStringList(path).contains(value);
+    }
+
+    private void saveWithQuotedLists() {
+        try {
+            String yaml = config.saveToString();
+            yaml = yaml.replaceAll("(?m)^(\\s*- )(?!\")([^\\n]+)$", "$1\"$2\"");
+            Files.writeString(file.toPath(), yaml);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void save() {
