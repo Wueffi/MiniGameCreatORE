@@ -7,7 +7,9 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import wueffi.miniGameCreatORE.MiniGameCreatORE;
 import wueffi.miniGameCreatORE.commands.GameCommand;
+import wueffi.miniGameCreatORE.managers.ConfigManager;
 
+import java.io.File;
 import java.util.*;
 
 import static wueffi.miniGameCreatORE.commands.GameCommand.*;
@@ -15,8 +17,13 @@ import static wueffi.miniGameCreatORE.commands.GameCommand.*;
 public final class GameCommandTabCompleter implements TabCompleter {
 
     private static final Map<String, String> commandsPermissions = GameCommand.getCommandsPermissions();
+    private final MiniGameCreatORE plugin;
+    private final ConfigManager configManager;
 
-    public GameCommandTabCompleter(MiniGameCreatORE plugin) {}
+    public GameCommandTabCompleter(MiniGameCreatORE plugin, ConfigManager configManager) {
+        this.plugin = plugin;
+        this.configManager = configManager;
+    }
 
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String @NotNull [] args) {
@@ -48,6 +55,15 @@ public final class GameCommandTabCompleter implements TabCompleter {
                     return List.of("<gameName>");
                 case "editconfig":
                     return GameCommand.getValidSettings();
+                case "publish":
+                    return sender.getServer().getOnlinePlayers().stream()
+                            .map(Player::getName)
+                            .filter(n -> n.toLowerCase().startsWith(args[1].toLowerCase()))
+                            .toList();
+                case "spawnpoint", "teamspawnpoint":
+                    return List.of("add", "remove").stream()
+                            .filter(s -> s.startsWith(args[1].toLowerCase()))
+                            .toList();
             }
         }
 
@@ -64,8 +80,38 @@ public final class GameCommandTabCompleter implements TabCompleter {
                 if (Objects.equals(args[1], "blocked_damage_causes")) return allDamageCauses;
                 return List.of("<Config Option not known!>");
             }
+
+            if (subcmd.equals("spawnpoint") && args[1].equalsIgnoreCase("remove")) {
+                GameConfig cfg = getDraftConfig(player);
+                if (cfg == null) return List.of();
+                return cfg.getSpawnPointNames().stream()
+                        .filter(s -> s.toLowerCase().startsWith(args[2].toLowerCase()))
+                        .toList();
+            }
+
+            if (subcmd.equals("teamspawnpoint")) {
+                return List.of("<teamID>");
+            }
+        }
+
+        if (args.length == 4) {
+            if (subcmd.equals("teamspawnpoint") && args[1].equalsIgnoreCase("remove")) {
+                GameConfig cfg = getDraftConfig(player);
+                if (cfg == null) return List.of();
+                return cfg.getTeamSpawnPointNames(args[2]).stream()
+                        .filter(s -> s.toLowerCase().startsWith(args[3].toLowerCase()))
+                        .toList();
+            }
         }
 
         return completions;
     }
+
+    private GameConfig getDraftConfig(Player player) {
+        String target = plugin.loadGameDrafts().get(player.getUniqueId());
+        if (target == null) return null;
+        File folder = new File(plugin.getDataFolder(), "gameWorlds/" + target);
+        return configManager.getConfigFromFolder(folder);
+    }
+
 }

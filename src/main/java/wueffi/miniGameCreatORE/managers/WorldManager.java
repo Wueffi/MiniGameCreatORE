@@ -94,51 +94,10 @@ public class WorldManager {
         WorldManager.plugin = plugin;
     }
 
-    public boolean saveAndCleanWorld(File folder) {
-        World world = Bukkit.getWorld(folder.getName());
-        if (world == null) return false;
-
-        World defaultWorld = Bukkit.getWorld("world");
-        if (defaultWorld == null) return false;
-
-        world.save();
-        for (Player player : world.getPlayers()) {
-            player.teleport(defaultWorld.getSpawnLocation());
-        }
-        Bukkit.unloadWorld(world, false);
-
-        stripPlayerData(folder);
-
-        File destination = new File(plugin.getDataFolder().getParentFile(), "MiniGameCore/MiniGames/" + folder.getName());
-        destination.mkdirs();
-
-        try {
-            Files.move(folder.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            plugin.getLogger().severe("Failed to move world to gameWorlds: " + e.getMessage());
-        }
-
-        return true;
-    }
-
     public static boolean editWorld(Player player, File folder) {
-        GameConfig config = configManager.getConfigFromFolder(folder);
-        if (config == null) {
-            plugin.getLogger().warning("config null");
-            return false;
-        }
-
         String worldName = folder.getName();
 
-        File rootFolder = new File(Bukkit.getWorldContainer(), worldName);
-        if (!rootFolder.exists() && folder.exists()) {
-            try {
-                Files.move(folder.toPath(), rootFolder.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            } catch (IOException e) {
-                plugin.getLogger().severe("Failed to move world to root: " + e.getMessage());
-                return false;
-            }
-        }
+        moveToRoot(folder, worldName);
 
         World world = Bukkit.getWorld(worldName);
 
@@ -154,7 +113,18 @@ public class WorldManager {
         return true;
     }
 
-    public static void moveWorld(File folder) {
+    public static void moveToRoot(File folder, String worldName) {
+        File rootFolder = new File(Bukkit.getWorldContainer(), worldName);
+        if (!rootFolder.exists() && folder.exists()) {
+            try {
+                Files.move(folder.toPath(), rootFolder.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                plugin.getLogger().severe("Failed to move world to root: " + e.getMessage());
+            }
+        }
+    }
+
+    public static void moveToArchive(File folder) {
         File gameWorldsFolder = new File(plugin.getDataFolder(), "gameWorlds");
         gameWorldsFolder.mkdirs();
         File destination = new File(gameWorldsFolder, folder.getName());
@@ -203,7 +173,7 @@ public class WorldManager {
         player.setFlying(true);
     }
 
-    private void stripPlayerData(File worldFolder) {
+    public static void stripPlayerData(File worldFolder) {
         for (String folderName : PLAYER_DATA_FOLDERS) {
             File folder = new File(worldFolder, folderName);
             if (folder.exists() && folder.isDirectory()) {

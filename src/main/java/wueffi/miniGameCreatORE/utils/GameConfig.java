@@ -1,5 +1,6 @@
 package wueffi.miniGameCreatORE.utils;
 
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -9,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
 
 public class GameConfig {
@@ -87,6 +89,81 @@ public class GameConfig {
 
     public boolean isInList(String path, String value) {
         return config.getStringList(path).contains(value);
+    }
+
+    public void addSpawnPoint(int x, int y, int z) {
+        int index = 1;
+        while (config.contains("spawnPoints.spawn" + index)) {
+            index++;
+        }
+
+        String path = "spawnPoints.spawn" + index;
+        config.set(path + ".x", x);
+        config.set(path + ".y", y);
+        config.set(path + ".z", z);
+
+        save();
+    }
+
+    public void removeSpawnPoint(String name) {
+        String path = "spawnPoints." + name;
+        if (!config.contains(path)) {
+            return;
+        }
+        config.set(path, null);
+        save();
+    }
+
+    public boolean isSpawnPoint(String name) {
+        String path = "spawnPoints." + name;
+        return config.contains(path);
+    }
+
+    public boolean isTeam(String teamId) {
+        String path = "teamSpawnPoints." + teamId;
+        return config.contains(path);
+    }
+
+    public boolean isTeamSpawnPoint(String teamId, String name) {
+        String path = "teamSpawnPoints." + teamId + "." + name;
+        return config.contains(path);
+    }
+
+    public void addTeamSpawnPoint(String teamId, int x, int y, int z) {
+        String basePath = "teamSpawnPoints." + teamId;
+
+        int index = 1;
+        while (config.contains(basePath + ".spawn" + index)) {
+            index++;
+        }
+
+        String path = basePath + ".spawn" + index;
+        config.set(path + ".x", x);
+        config.set(path + ".y", y);
+        config.set(path + ".z", z);
+
+        save();
+    }
+
+    public void removeTeamSpawnPoint(String teamId, String spawnpointName) {
+        String path = "teamSpawnPoints." + teamId + "." + spawnpointName;
+        if (!config.contains(path)) {
+            return;
+        }
+        config.set(path, null);
+        save();
+    }
+
+    public List<String> getSpawnPointNames() {
+        ConfigurationSection section = config.getConfigurationSection("spawnPoints");
+        if (section == null) return List.of();
+        return new ArrayList<>(section.getKeys(false));
+    }
+
+    public List<String> getTeamSpawnPointNames(String teamId) {
+        ConfigurationSection section = config.getConfigurationSection("teamSpawnPoints." + teamId);
+        if (section == null) return List.of();
+        return new ArrayList<>(section.getKeys(false));
     }
 
     private void saveWithQuotedLists() {

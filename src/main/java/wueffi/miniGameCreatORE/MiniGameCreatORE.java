@@ -39,7 +39,7 @@ public final class MiniGameCreatORE extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerLeaveListener(this), this);
 
         GameCommand gameCommand = new GameCommand(this, configManager);
-        GameCommandTabCompleter gameCommandTabCompleter = new GameCommandTabCompleter(this);
+        GameCommandTabCompleter gameCommandTabCompleter = new GameCommandTabCompleter(this, configManager);
 
         getCommand("mgcreator").setExecutor(gameCommand);
         getCommand("mgcreator").setTabCompleter(gameCommandTabCompleter);
@@ -54,7 +54,7 @@ public final class MiniGameCreatORE extends JavaPlugin {
             File rootFolder = new File(Bukkit.getWorldContainer(), worldName);
 
             if (rootFolder.exists()) {
-                WorldManager.moveWorld(rootFolder);
+                WorldManager.moveToArchive(rootFolder);
             }
         }
     }

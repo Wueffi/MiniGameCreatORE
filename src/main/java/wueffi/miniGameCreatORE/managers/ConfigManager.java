@@ -37,8 +37,7 @@ public class ConfigManager {
 
         GameConfig config = new GameConfig(plugin, folder);
 
-        loadedConfigs.put(config.getString("game.name"), config);
-
+        loadedConfigs.put(folder.getName(), config);
     }
 
     public GameConfig getConfigFromFolder(File folder) {

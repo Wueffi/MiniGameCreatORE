@@ -42,6 +42,6 @@ public class PlayerLeaveListener implements Listener {
         }
 
         Bukkit.unloadWorld(world, true);
-        WorldManager.moveWorld(worldFolder);
+        WorldManager.moveToArchive(worldFolder);
     }
 }

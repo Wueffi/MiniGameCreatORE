@@ -2,10 +2,13 @@ package wueffi.miniGameCreatORE.commands;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.jetbrains.annotations.NotNull;
@@ -15,6 +18,9 @@ import wueffi.miniGameCreatORE.managers.WorldManager;
 import wueffi.miniGameCreatORE.utils.GameConfig;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -22,6 +28,8 @@ import java.util.List;
 
 import static wueffi.miniGameCreatORE.MiniGameCreatORE.sendMGCError;
 import static wueffi.miniGameCreatORE.MiniGameCreatORE.sendMGCInfo;
+import static wueffi.miniGameCreatORE.managers.WorldManager.moveToArchive;
+import static wueffi.miniGameCreatORE.managers.WorldManager.stripPlayerData;
 
 public final class GameCommand implements CommandExecutor {
     private final MiniGameCreatORE plugin;
@@ -57,6 +65,8 @@ public final class GameCommand implements CommandExecutor {
             commandsPermissions.put("resume", "mgcreator.create");
             commandsPermissions.put("editconfig", "mgcreator.create");
             commandsPermissions.put("showconfig", "mgcreator.create");
+            commandsPermissions.put("spawnpoint", "mgcreator.create");
+            commandsPermissions.put("teamspawnpoint", "mgcreator.create");
             commandsPermissions.put("delete", "mgcreator.create");
             commandsPermissions.put("publish", "mgcreator.publish");
         }
@@ -183,7 +193,7 @@ public final class GameCommand implements CommandExecutor {
                     sendMGCError(player, "Could not start World-Creation!");
                     return true;
                 }
-                break;
+            break;
 
             case "resume":
                 if (!plugin.loadGameDrafts().containsKey(player.getUniqueId())) {
@@ -197,7 +207,7 @@ public final class GameCommand implements CommandExecutor {
                     sendMGCError(player, "Could not resume editing draft!");
                     return true;
                 }
-                break;
+            break;
 
             case "editconfig":
                 if (!plugin.loadGameDrafts().containsKey(player.getUniqueId())) {
@@ -286,7 +296,7 @@ public final class GameCommand implements CommandExecutor {
                     }
                     return true;
                 }
-                break;
+            break;
 
             case "showconfig":
                 if (!plugin.loadGameDrafts().containsKey(player.getUniqueId())) {
@@ -296,7 +306,16 @@ public final class GameCommand implements CommandExecutor {
 
                 target = plugin.loadGameDrafts().get(player.getUniqueId());
                 folder = new File(plugin.getDataFolder(), "gameWorlds/" + target);
-                GameConfig showConfig = configManager.getConfigFromFolder(folder);
+
+                WorldManager.moveToRoot(folder, folder.getName());
+                File rootFolder = new File(Bukkit.getWorldContainer(), folder.getName());
+                GameConfig showConfig = configManager.getConfigFromFolder(rootFolder);
+
+                if (showConfig == null) {
+                    sendMGCError(player, "Could not load config for your draft!");
+                    plugin.getLogger().severe("Config null for folder: " + rootFolder.getAbsolutePath());
+                    return true;
+                }
 
                 player.sendMessage(Component.text("--- Game Config ---").color(NamedTextColor.GOLD));
 
@@ -319,10 +338,56 @@ public final class GameCommand implements CommandExecutor {
                                 .color(NamedTextColor.AQUA)
                                 .clickEvent(net.kyori.adventure.text.event.ClickEvent.suggestCommand("/mgcreator editconfig " + s + " " + val))
                                 .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(Component.text("Click to edit " + s)));
-                        player.sendMessage(Component.text(s + ": ").color(NamedTextColor.YELLOW).append(Component.text(val.toString()).color(NamedTextColor.WHITE)).append(editButton));
+                        player.sendMessage(Component.text(s + ": ")
+                                .color(NamedTextColor.YELLOW)
+                                .append(Component.text(val.toString()).color(NamedTextColor.WHITE))
+                                .append(editButton));
                     }
                 }
-                break;
+
+                List<String> spawnPoints = showConfig.getSpawnPointNames();
+                if (!spawnPoints.isEmpty()) {
+                    player.sendMessage(Component.text("Spawn Points:").color(NamedTextColor.YELLOW));
+                    for (String spawnName : spawnPoints) {
+                        int spawnX = (int) showConfig.get("spawnPoints." + spawnName + ".x");
+                        int spawnY = (int) showConfig.get("spawnPoints." + spawnName + ".y");
+                        int spawnZ = (int) showConfig.get("spawnPoints." + spawnName + ".z");
+
+                        Component removeButton = Component.text(" [remove]")
+                                .color(NamedTextColor.RED)
+                                .clickEvent(net.kyori.adventure.text.event.ClickEvent.suggestCommand("/mgcreator spawnpoint remove " + spawnName))
+                                .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(Component.text("Click to remove " + spawnName)));
+
+                        player.sendMessage(Component.text("  " + spawnName + ": ").color(NamedTextColor.WHITE)
+                                .append(Component.text(spawnX + ", " + spawnY + ", " + spawnZ).color(NamedTextColor.GRAY))
+                                .append(removeButton)
+                        );
+                    }
+                }
+
+                ConfigurationSection teamSection = showConfig.getConfig().getConfigurationSection("teamSpawnPoints");
+                if (teamSection != null) {
+                    player.sendMessage(Component.text("Team Spawn Points:").color(NamedTextColor.YELLOW));
+                    for (String teamId : teamSection.getKeys(false)) {
+                        player.sendMessage(Component.text("  " + teamId + ":").color(NamedTextColor.AQUA));
+                        for (String spawnName : showConfig.getTeamSpawnPointNames(teamId)) {
+                            int spawnX = (int) showConfig.get("teamSpawnPoints." + teamId + "." + spawnName + ".x");
+                            int spawnY = (int) showConfig.get("teamSpawnPoints." + teamId + "." + spawnName + ".y");
+                            int spawnZ = (int) showConfig.get("teamSpawnPoints." + teamId + "." + spawnName + ".z");
+
+                            Component removeButton = Component.text(" [remove]")
+                                    .color(NamedTextColor.RED)
+                                    .clickEvent(net.kyori.adventure.text.event.ClickEvent.suggestCommand("/mgcreator teamspawnpoint remove " + teamId + " " + spawnName))
+                                    .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(Component.text("Click to remove " + spawnName + " from " + teamId)));
+
+                            player.sendMessage(Component.text("    " + spawnName + ": ").color(NamedTextColor.WHITE)
+                                    .append(Component.text(spawnX + ", " + spawnY + ", " + spawnZ).color(NamedTextColor.GRAY))
+                                    .append(removeButton)
+                            );
+                        }
+                    }
+                }
+            break;
 
             case "delete":
                 if (!plugin.loadGameDrafts().containsKey(player.getUniqueId())) {
@@ -338,7 +403,111 @@ public final class GameCommand implements CommandExecutor {
                 }
                 plugin.removeGameDraft(player.getUniqueId());
                 sendMGCInfo(player, "Sucessfully deleted draft: " + target);
-                break;
+            break;
+
+            case "spawnpoint":
+                if (args.length < 2) {
+                    sendMGCError(player, "Usage: /mgcreator spawnpoint <add|remove spawnPointName>");
+                    return true;
+                }
+
+                if (!plugin.loadGameDrafts().containsKey(player.getUniqueId())) {
+                    sendMGCError(player, "You don't have a draft yet! Use \"/mgcreator create\" to create one!");
+                    break;
+                }
+
+                target = plugin.loadGameDrafts().get(player.getUniqueId());
+                folder = new File(plugin.getDataFolder(), "gameWorlds/" + target);
+
+                if (folder.exists()) WorldManager.moveToRoot(folder, folder.getName());
+
+                rootFolder = new File(Bukkit.getWorldContainer(), folder.getName());
+                config = configManager.getConfigFromFolder(rootFolder);
+
+                String option = args[1];
+
+                if (!(option.equals("add") || option.equals("remove"))) {
+                    sendMGCError(player, "Usage: /mgcreator spawnpoint <add|remove spawnPointName>");
+                    return true;
+                }
+
+                int x = (int) player.getLocation().getX();
+                int y = (int) player.getLocation().getY();
+                int z = (int) player.getLocation().getZ();
+
+                if (option.equals("add")) {
+                    config.addSpawnPoint(x, y, z);
+                    sendMGCInfo(player, "Added SpawnPoint: " + x + ", " + y + ", " + z + "!");
+                } else {
+                    if (args.length < 3) {
+                        sendMGCError(player, "Usage: /mgcreator spawnpoint remove spawnPointName");
+                        return true;
+                    }
+                    String spawnPointName = args[2];
+                    if (!config.isSpawnPoint(spawnPointName)) {
+                        sendMGCError(player, "Not a valid spawnpoint name!");
+                        return true;
+                    }
+                    config.removeSpawnPoint(spawnPointName);
+                    sendMGCError(player, "Removed SpawnPoint: " + x + ", " + y + ", " + z + "!");
+                }
+            break;
+
+            case "teamspawnpoint":
+                if (args.length < 3) {
+                    sendMGCError(player, "Usage: /mgcreator teamSpawnPoint <add teamID|remove teamID spawnPointName>");
+                    return true;
+                }
+
+                if (!plugin.loadGameDrafts().containsKey(player.getUniqueId())) {
+                    sendMGCError(player, "You don't have a draft yet! Use \"/mgcreator create\" to create one!");
+                    break;
+                }
+
+                target = plugin.loadGameDrafts().get(player.getUniqueId());
+                folder = new File(plugin.getDataFolder(), "gameWorlds/" + target);
+
+                if (folder.exists()) WorldManager.moveToRoot(folder, folder.getName());
+
+                rootFolder = new File(Bukkit.getWorldContainer(), folder.getName());
+                config = configManager.getConfigFromFolder(rootFolder);
+
+                option = args[1];
+
+                if (!(option.equals("add") || option.equals("remove"))) {
+                    sendMGCError(player, "Usage: /mgcreator teamSpawnPoint <add teamID|remove teamID spawnPointName>");
+                    return true;
+                }
+
+                String teamId = args[2];
+
+                x = (int) player.getLocation().getX();
+                y = (int) player.getLocation().getY();
+                z = (int) player.getLocation().getZ();
+
+                if (option.equals("add")) {
+                    config.addTeamSpawnPoint(teamId, x, y, z);
+                    sendMGCInfo(player, "Added TeamSpawnPoint for team " + teamId + " at: " + x + ", " + y + ", " + z + "!");
+                } else {
+                    if (args.length < 4) {
+                        sendMGCError(player, "Usage: /mgcreator spawnpoint remove teamID spawnPointName");
+                        return true;
+                    }
+
+                    if (!config.isTeam(teamId)) {
+                        sendMGCError(player, "Not a valid team ID!");
+                        return true;
+                    }
+
+                    String spawnPointName = args[3];
+                    if (!config.isTeamSpawnPoint(teamId, spawnPointName)) {
+                        sendMGCError(player, "Not a valid spawnpoint name!");
+                        return true;
+                    }
+                    config.removeTeamSpawnPoint(teamId, spawnPointName);
+                    sendMGCError(player, "Removed TeamSpawnPoint for team " + teamId + " at: " + x + ", " + y + ", " + z + "!");
+                }
+            break;
 
             case "publish":
                 if (args.length < 2) {
@@ -358,10 +527,32 @@ public final class GameCommand implements CommandExecutor {
                 }
 
                 target = plugin.loadGameDrafts().get(targetPlayer.getUniqueId());
+
+                folder = new File(Bukkit.getWorldContainer(), target);
+                World world = Bukkit.getWorld(folder.getName());
+                if (world != null) {
+                    World defaultWorld = Bukkit.getWorld("world");
+                    if (defaultWorld == null) return true;
+
+                    for (Player player1 : world.getPlayers()) {
+                        player1.teleport(defaultWorld.getSpawnLocation());
+                    }
+                    Bukkit.unloadWorld(world, true);
+
+                    moveToArchive(folder);
+                }
+
                 folder = new File(plugin.getDataFolder(), "gameWorlds/" + target);
 
-                WorldManager worldManager = new WorldManager();
-                if (!worldManager.saveAndCleanWorld(folder)) {
+                stripPlayerData(folder);
+
+                File destination = new File(plugin.getDataFolder().getParentFile(), "MiniGameCore/MiniGames/" + folder.getName());
+                destination.mkdirs();
+
+                try {
+                    Files.move(folder.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException e) {
+                    plugin.getLogger().severe("Failed to move world to MiniGames: " + e.getMessage());
                     sendMGCError(player, "Could not publish " + targetPlayer.getName() + "'s draft!");
                     return true;
                 }
@@ -373,7 +564,7 @@ public final class GameCommand implements CommandExecutor {
                 plugin.removeGameDraft(targetPlayer.getUniqueId());
                 sendMGCInfo(player, "Published " + game + " successfully!");
                 sendMGCInfo(targetPlayer, "Your draft " + game + " was published by " + player.getName() + "!");
-                break;
+            break;
         }
 
         return true;
