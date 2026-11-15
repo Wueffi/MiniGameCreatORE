@@ -57,7 +57,6 @@ public class WorldManager {
         world.setGameRule(GameRule.FALL_DAMAGE, false);
         world.setTime(6000);
         world.setDifficulty(Difficulty.PEACEFUL);
-        world.setSpawnLocation(0, 64, 0);
 
         configManager.createConfig(worldFolder, gameName, maxPlayers);
         teleportToEdit(player, world);
@@ -166,7 +165,7 @@ public class WorldManager {
     }
 
     private static void teleportToEdit(Player player, World world) {
-        Location spawn = new Location(world, 0, 64, 0);
+        Location spawn = new Location(world, 0, 67, 0);
         player.teleport(spawn);
         player.setGameMode(GameMode.CREATIVE);
         player.setAllowFlight(true);
