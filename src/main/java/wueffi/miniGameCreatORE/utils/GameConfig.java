@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class GameConfig {
 
@@ -164,6 +165,39 @@ public class GameConfig {
         ConfigurationSection section = config.getConfigurationSection("game.teamSpawnPoints." + teamId);
         if (section == null) return List.of();
         return new ArrayList<>(section.getKeys(false));
+    }
+
+    public boolean correctAmountOfSpawnPoints() {
+        int maxPlayers = Integer.parseInt(getString("game.maxPlayers"));
+
+        if (getString("game.teams") == null) return false;
+        int teams = Integer.parseInt(getString("game.teams"));
+
+        ConfigurationSection spawnPoints = config.getConfigurationSection("game.spawnPoints");
+        ConfigurationSection teamSpawnPoints = config.getConfigurationSection("game.teamSpawnPoints");
+
+        if (teams == 0) {
+            return spawnPoints != null && spawnPoints.getKeys(false).size() == maxPlayers;
+        }
+
+        if (maxPlayers % teams != 0 || teamSpawnPoints == null) {
+            return false;
+        }
+
+        Set<String> teamKeys = teamSpawnPoints.getKeys(false);
+        if (teamKeys.size() != teams) {
+            return false;
+        }
+
+        int expectedSpawnsPerTeam = maxPlayers / teams;
+        for (String teamId : teamKeys) {
+            ConfigurationSection teamSection = teamSpawnPoints.getConfigurationSection(teamId);
+            if (teamSection == null || teamSection.getKeys(false).size() != expectedSpawnsPerTeam) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private void saveWithQuotedLists() {

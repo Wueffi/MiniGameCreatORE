@@ -542,6 +542,11 @@ public final class GameCommand implements CommandExecutor {
 
                 folder = new File(plugin.getDataFolder(), "gameWorlds/" + target);
 
+                if (!configManager.getConfigFromFolder(folder).correctAmountOfSpawnPoints()) {
+                    sendMGCError(player, "Not the correct amount/any spawnPoints!");
+                    return true;
+                }
+
                 stripPlayerData(folder);
 
                 File destination = new File(plugin.getDataFolder().getParentFile(), "MiniGameCore/MiniGames/" + folder.getName());
