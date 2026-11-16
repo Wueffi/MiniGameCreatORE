@@ -15,9 +15,11 @@ public class ConfigManager {
 
     private final MiniGameCreatORE plugin;
     private final Map<String, GameConfig> loadedConfigs = new HashMap<>();
+    private final File mgcConfig;
 
     public ConfigManager(MiniGameCreatORE plugin) {
         this.plugin = plugin;
+        this.mgcConfig = new File(plugin.getDataFolder().getParentFile(), "MiniGameCore/config.yml");
     }
 
     public GameConfig createConfig(File folder, String gameName, int minPlayers) {
@@ -46,7 +48,6 @@ public class ConfigManager {
     }
 
     public void addMGCGame(String name) {
-        File mgcConfig = new File(plugin.getDataFolder().getParentFile(), "MiniGameCore/config.yml");
         if (!mgcConfig.exists()) {
             plugin.getLogger().severe("MiniGameCore/config.yml not found!");
             return;
@@ -56,6 +57,25 @@ public class ConfigManager {
         List<String> games = config.getStringList("available-games");
         if (!games.contains(name)) {
             games.add(name);
+            config.set("available-games", games);
+            try {
+                config.save(mgcConfig);
+            } catch (IOException e) {
+                plugin.getLogger().severe("Failed to save MiniGameCore config: " + e.getMessage());
+            }
+        }
+    }
+
+    public void removeMGCGame(String name) {
+        if (!mgcConfig.exists()) {
+            plugin.getLogger().severe("MiniGameCore/config.yml not found!");
+            return;
+        }
+
+        FileConfiguration config = YamlConfiguration.loadConfiguration(mgcConfig);
+        List<String> games = config.getStringList("available-games");
+        if (games.contains(name)) {
+            games.remove(name);
             config.set("available-games", games);
             try {
                 config.save(mgcConfig);

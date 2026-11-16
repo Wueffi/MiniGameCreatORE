@@ -21,10 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 import static wueffi.miniGameCreatORE.MiniGameCreatORE.sendMGCError;
 import static wueffi.miniGameCreatORE.MiniGameCreatORE.sendMGCInfo;
@@ -69,6 +66,7 @@ public final class GameCommand implements CommandExecutor {
             commandsPermissions.put("teamspawnpoint", "mgcreator.create");
             commandsPermissions.put("delete", "mgcreator.create");
             commandsPermissions.put("publish", "mgcreator.publish");
+            commandsPermissions.put("unpublish", "mgcreator.publish");
         }
         return commandsPermissions;
     }
@@ -564,6 +562,57 @@ public final class GameCommand implements CommandExecutor {
                 plugin.removeGameDraft(targetPlayer.getUniqueId());
                 sendMGCInfo(player, "Published " + game + " successfully!");
                 sendMGCInfo(targetPlayer, "Your draft " + game + " was published by " + player.getName() + "!");
+            break;
+
+            case "unpublish":
+                if (args.length < 2) {
+                    sendMGCError(player, "Usage: /mgcreator unpublish <name> [player]");
+                    return true;
+                }
+
+                String targetGame = args[1];
+                File targetGameFolder = new File(plugin.getDataFolder().getParentFile(), "MiniGameCore/MiniGames/" + targetGame + "_world");
+                if (!targetGameFolder.exists()) {
+                    sendMGCError(player, "Game " + args[1] + " not found!");
+                    return true;
+                }
+
+                if (args.length > 2) {
+                    targetPlayer = plugin.getServer().getPlayerExact(args[2]);
+                    if (targetPlayer == null) {
+                        sendMGCError(player, "Player " + args[2] + " is not online!");
+                        return true;
+                    }
+                } else {
+                    targetPlayer = player;
+                }
+
+                if (plugin.loadGameDrafts().containsKey(targetPlayer.getUniqueId())) {
+                    String pronoun = "You already have";
+                    if (args.length > 2) pronoun = "Target already has";
+                    sendMGCError(player, pronoun + " a draft! Finish the draft before unpublishing a game!");
+                    return true;
+                }
+
+                destination = new File(plugin.getDataFolder(), "gameWorlds/" + targetGame);
+                if (destination.exists()) destination = new File(plugin.getDataFolder(), "gameWorlds/" + targetGame + System.currentTimeMillis() + "_world");
+
+                destination.mkdirs();
+
+                try {
+                    Files.move(targetGameFolder.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException e) {
+                    plugin.getLogger().severe("Failed to move world to MiniGames: " + e.getMessage());
+                    sendMGCError(player, "Could not unpublish " + targetGame + "!");
+                    return true;
+                }
+
+                configManager.removeMGCGame(targetGame);
+                game = destination.getName().replace("_world", "");
+
+                plugin.addGameDraft(targetPlayer.getUniqueId(), game);
+                sendMGCInfo(player, "Unpublished " + targetGame + " successfully!");
+                sendMGCInfo(targetPlayer, "You now have a draft called " + game + "!");
             break;
         }
 

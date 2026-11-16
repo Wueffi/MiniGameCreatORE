@@ -13,6 +13,8 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import static wueffi.miniGameCreatORE.MiniGameCreatORE.sendMGCError;
+
 public class WorldManager {
 
     private static final String[] PLAYER_DATA_FOLDERS = { "playerdata", "stats", "advancements" };
@@ -23,10 +25,17 @@ public class WorldManager {
     public static boolean createWorld(Player player, String gameName, int maxPlayers) {
         String worldName = gameName + "_world";
 
+        File destination = new File(plugin.getDataFolder().getParentFile(), "MiniGameCore/MiniGames/" + worldName);
         File worldFolder = new File(Bukkit.getWorldContainer(), worldName);
         File storedFolder = new File(new File(plugin.getDataFolder(), "gameWorlds"), worldName);
 
-        if (Bukkit.getWorld(worldName) != null || worldFolder.exists() || storedFolder.exists()) {
+        if (destination.exists() && isNonEmptyDirectory(destination)) {
+            sendMGCError(player, "A published MiniGame with that name already exists!");
+            return false;
+        }
+
+        if (Bukkit.getWorld(worldName) != null || isNonEmptyDirectory(worldFolder) || isNonEmptyDirectory(storedFolder)) {
+            sendMGCError(player, "A draft with that name already exists!");
             return false;
         }
 
@@ -54,9 +63,9 @@ public class WorldManager {
         world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
         world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
         world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
-        world.setGameRule(GameRule.FALL_DAMAGE, false);
         world.setTime(6000);
         world.setDifficulty(Difficulty.PEACEFUL);
+        world.setSpawnLocation(0, 101, 0);
 
         configManager.createConfig(worldFolder, gameName, maxPlayers);
         teleportToEdit(player, world);
@@ -165,7 +174,7 @@ public class WorldManager {
     }
 
     private static void teleportToEdit(Player player, World world) {
-        Location spawn = new Location(world, 0, 67, 0);
+        Location spawn = new Location(world, 0, 68, 0);
         player.teleport(spawn);
         player.setGameMode(GameMode.CREATIVE);
         player.setAllowFlight(true);
@@ -209,5 +218,9 @@ public class WorldManager {
         } catch (IOException e) {
             plugin.getLogger().severe("Failed to delete: " + folder.getAbsolutePath());
         }
+    }
+
+    private static boolean isNonEmptyDirectory(File folder) {
+        return folder.isDirectory() && folder.list() != null && folder.list().length > 0;
     }
 }

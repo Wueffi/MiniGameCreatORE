@@ -19,7 +19,7 @@ public class GameConfig {
     private final File file;
     private final FileConfiguration config;
 
-    public GameConfig(MiniGameCreatORE plugin, File worldFolder, String gameName, int minPlayers) {
+    public GameConfig(MiniGameCreatORE plugin, File worldFolder, String gameName, int maxPlayers) {
         this.plugin = plugin;
 
         if (!worldFolder.exists()) {
@@ -41,7 +41,7 @@ public class GameConfig {
         this.config = YamlConfiguration.loadConfiguration(file);
 
         config.set("game.name", gameName);
-        config.set("game.minPlayers", minPlayers);
+        config.set("game.maxPlayers", maxPlayers);
 
         save();
     }
@@ -93,11 +93,11 @@ public class GameConfig {
 
     public void addSpawnPoint(int x, int y, int z) {
         int index = 1;
-        while (config.contains("spawnPoints.spawn" + index)) {
+        while (config.contains("game.spawnPoints.spawn" + index)) {
             index++;
         }
 
-        String path = "spawnPoints.spawn" + index;
+        String path = "game.spawnPoints.spawn" + index;
         config.set(path + ".x", x);
         config.set(path + ".y", y);
         config.set(path + ".z", z);
@@ -106,7 +106,7 @@ public class GameConfig {
     }
 
     public void removeSpawnPoint(String name) {
-        String path = "spawnPoints." + name;
+        String path = "game.spawnPoints." + name;
         if (!config.contains(path)) {
             return;
         }
@@ -115,22 +115,22 @@ public class GameConfig {
     }
 
     public boolean isSpawnPoint(String name) {
-        String path = "spawnPoints." + name;
+        String path = "game.spawnPoints." + name;
         return config.contains(path);
     }
 
     public boolean isTeam(String teamId) {
-        String path = "teamSpawnPoints." + teamId;
+        String path = "game.teamSpawnPoints." + teamId;
         return config.contains(path);
     }
 
     public boolean isTeamSpawnPoint(String teamId, String name) {
-        String path = "teamSpawnPoints." + teamId + "." + name;
+        String path = "game.teamSpawnPoints." + teamId + "." + name;
         return config.contains(path);
     }
 
     public void addTeamSpawnPoint(String teamId, int x, int y, int z) {
-        String basePath = "teamSpawnPoints." + teamId;
+        String basePath = "game.teamSpawnPoints." + teamId;
 
         int index = 1;
         while (config.contains(basePath + ".spawn" + index)) {
@@ -146,7 +146,7 @@ public class GameConfig {
     }
 
     public void removeTeamSpawnPoint(String teamId, String spawnpointName) {
-        String path = "teamSpawnPoints." + teamId + "." + spawnpointName;
+        String path = "game.teamSpawnPoints." + teamId + "." + spawnpointName;
         if (!config.contains(path)) {
             return;
         }
@@ -161,7 +161,7 @@ public class GameConfig {
     }
 
     public List<String> getTeamSpawnPointNames(String teamId) {
-        ConfigurationSection section = config.getConfigurationSection("teamSpawnPoints." + teamId);
+        ConfigurationSection section = config.getConfigurationSection("game.teamSpawnPoints." + teamId);
         if (section == null) return List.of();
         return new ArrayList<>(section.getKeys(false));
     }

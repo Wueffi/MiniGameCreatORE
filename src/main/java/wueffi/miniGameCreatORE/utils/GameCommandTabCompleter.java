@@ -1,5 +1,6 @@
 package wueffi.miniGameCreatORE.utils;
 
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
@@ -51,7 +52,7 @@ public final class GameCommandTabCompleter implements TabCompleter {
 
         if (args.length == 2) {
             switch (subcmd) {
-                case "create":
+                case "create", "unpublish":
                     return List.of("<gameName>");
                 case "editconfig":
                     return GameCommand.getValidSettings();
@@ -91,6 +92,13 @@ public final class GameCommandTabCompleter implements TabCompleter {
 
             if (subcmd.equals("teamspawnpoint")) {
                 return List.of("<teamID>");
+            }
+
+            if (subcmd.equals("unpublish")) {
+                return sender.getServer().getOnlinePlayers().stream()
+                        .map(Player::getName)
+                        .filter(n -> n.toLowerCase().startsWith(args[2].toLowerCase()))
+                        .toList();
             }
         }
 
