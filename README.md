@@ -15,13 +15,14 @@
 ---
 ## 📜 Commands & Permissions
 
-| Command                                                                | Description                                             | Permission          |
-|------------------------------------------------------------------------|---------------------------------------------------------|---------------------|
-| `/mgcreator create <gameName> <maxPlayers>`                            | Creates a new Draft                                     | `mgcreator.create`  |
-| `/mgcreator resume`                                                    | Resume editing your Draft                               | `mgcreator.create`  |
-| `/mgcreator editconfig <option> <value>`                               | Edit the config of your game                            | `mgcreator.create`  |
-| `/mgcreator showconfig`                                                | Display the current config in chat                      | `mgcreator.create`  |
-| `/mgcreator spawnpoint <add\|remove spawnPointName>`                   | Adds and removes single-player spawnpoints to your game | `mgcreator.create`  |
-| `/mgcreator teamspawnpoint <add teamID\|remove teamID spawnPointName>` | Adds and removes team spawnpoints to your game          | `mgcreator.create`  |
-| `/mgcreator delete`                                                    | Deletes your current draft                              | `mgcreator.create`  |
-| `/mgcreator publish <user>`                                            | Publishes the game inside of the MGC Plugin             | `mgcreator.publish` |
+| Command                                                                | Description                                                                  | Permission          |
+|------------------------------------------------------------------------|------------------------------------------------------------------------------|---------------------|
+| `/mgcreator create <gameName> <maxPlayers>`                            | Creates a new Draft                                                          | `mgcreator.create`  |
+| `/mgcreator resume`                                                    | Resume editing your Draft                                                    | `mgcreator.create`  |
+| `/mgcreator editconfig <option> <value>`                               | Edit the config of your game                                                 | `mgcreator.create`  |
+| `/mgcreator showconfig`                                                | Display the current config in chat                                           | `mgcreator.create`  |
+| `/mgcreator spawnpoint <add\|remove spawnPointName>`                   | Adds and removes single-player spawnpoints to your game                      | `mgcreator.create`  |
+| `/mgcreator teamspawnpoint <add teamID\|remove teamID spawnPointName>` | Adds and removes team spawnpoints to your game                               | `mgcreator.create`  |
+| `/mgcreator delete`                                                    | Deletes your current draft                                                   | `mgcreator.create`  |
+| `/mgcreator publish <user>`                                            | Publishes the game inside of the MGC Plugin                                  | `mgcreator.publish` |
+| `/mgcreator unpublish <gameName> [user]`                               | Unpublishes the game from the MGC Plugin and saves it as a draft of the user | `mgcreator.publish` |
