@@ -223,4 +223,14 @@ public class WorldManager {
     private static boolean isNonEmptyDirectory(File folder) {
         return folder.isDirectory() && folder.list() != null && folder.list().length > 0;
     }
+
+    public static boolean isInWorld(Player player) {
+        String target = plugin.loadGameDrafts().get(player.getUniqueId());
+        File folder = new File(plugin.getDataFolder(), "gameWorlds/" + target);
+
+        if (folder.exists()) WorldManager.moveToRoot(folder, folder.getName());
+        World world = Bukkit.getWorld(folder.getName());
+
+        return player.getWorld() != world;
+    }
 }

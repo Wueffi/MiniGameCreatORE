@@ -11,7 +11,7 @@ import wueffi.miniGameCreatORE.commands.GameCommand;
 import wueffi.miniGameCreatORE.managers.ConfigManager;
 import wueffi.miniGameCreatORE.managers.WorldManager;
 import wueffi.miniGameCreatORE.utils.GameCommandTabCompleter;
-import wueffi.miniGameCreatORE.utils.PlayerLeaveListener;
+import wueffi.miniGameCreatORE.utils.PlayerEventListener;
 
 import java.io.File;
 import java.util.HashMap;
@@ -36,7 +36,7 @@ public final class MiniGameCreatORE extends JavaPlugin {
         WorldManager.setConfigManager(configManager);
         WorldManager.setPlugin(this);
 
-        getServer().getPluginManager().registerEvents(new PlayerLeaveListener(this), this);
+        getServer().getPluginManager().registerEvents(new PlayerEventListener(this), this);
 
         GameCommand gameCommand = new GameCommand(this, configManager);
         GameCommandTabCompleter gameCommandTabCompleter = new GameCommandTabCompleter(this, configManager);

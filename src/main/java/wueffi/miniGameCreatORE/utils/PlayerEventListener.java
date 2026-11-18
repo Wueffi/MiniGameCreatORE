@@ -8,15 +8,18 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.entity.Player;
 import wueffi.miniGameCreatORE.MiniGameCreatORE;
 import wueffi.miniGameCreatORE.managers.WorldManager;
+import wueffi.MiniGameCore.api.GameSpectateEvent;
 
 import java.io.File;
 import java.util.UUID;
 
-public class PlayerLeaveListener implements Listener {
+import static wueffi.miniGameCreatORE.managers.WorldManager.isInWorld;
+
+public class PlayerEventListener implements Listener {
 
     private final MiniGameCreatORE plugin;
 
-    public PlayerLeaveListener(MiniGameCreatORE plugin) {
+    public PlayerEventListener(MiniGameCreatORE plugin) {
         this.plugin = plugin;
     }
 
@@ -43,5 +46,14 @@ public class PlayerLeaveListener implements Listener {
 
         Bukkit.unloadWorld(world, true);
         WorldManager.moveToArchive(worldFolder);
+    }
+
+    @EventHandler
+    public void onPlayerSpectate(GameSpectateEvent event) {
+        Player target = Bukkit.getPlayer(event.getTargetUUID());
+
+        if (target != null && isInWorld(target)) {
+            event.setCancelled(true);
+        }
     }
 }

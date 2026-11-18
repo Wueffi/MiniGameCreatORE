@@ -12,6 +12,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.jetbrains.annotations.NotNull;
+import wueffi.MiniGameCore.api.MiniGameCoreAPI;
 import wueffi.miniGameCreatORE.MiniGameCreatORE;
 import wueffi.miniGameCreatORE.managers.ConfigManager;
 import wueffi.miniGameCreatORE.managers.WorldManager;
@@ -25,8 +26,7 @@ import java.util.*;
 
 import static wueffi.miniGameCreatORE.MiniGameCreatORE.sendMGCError;
 import static wueffi.miniGameCreatORE.MiniGameCreatORE.sendMGCInfo;
-import static wueffi.miniGameCreatORE.managers.WorldManager.moveToArchive;
-import static wueffi.miniGameCreatORE.managers.WorldManager.stripPlayerData;
+import static wueffi.miniGameCreatORE.managers.WorldManager.*;
 
 public final class GameCommand implements CommandExecutor {
     private final MiniGameCreatORE plugin;
@@ -187,6 +187,10 @@ public final class GameCommand implements CommandExecutor {
                     sendMGCError(player, "There is already a draft using this name!");
                     return true;
                 }
+                if (MiniGameCoreAPI.isInLobby(player.getUniqueId())) {
+                    sendMGCError(player, "You cannot start a draft while being in a lobby!");
+                    return true;
+                }
                 if (!WorldManager.createWorld(player, args[1], Integer.parseInt(args[2]))) {
                     sendMGCError(player, "Could not start World-Creation!");
                     return true;
@@ -196,6 +200,11 @@ public final class GameCommand implements CommandExecutor {
             case "resume":
                 if (!plugin.loadGameDrafts().containsKey(player.getUniqueId())) {
                     sendMGCError(player, "You don't have a draft yet! Use \"/mgcreator create\" to create one!");
+                    return true;
+                }
+
+                if (MiniGameCoreAPI.isInLobby(player.getUniqueId())) {
+                    sendMGCError(player, "You cannot edit your draft while being in a lobby!");
                     return true;
                 }
 
@@ -422,6 +431,11 @@ public final class GameCommand implements CommandExecutor {
                 rootFolder = new File(Bukkit.getWorldContainer(), folder.getName());
                 config = configManager.getConfigFromFolder(rootFolder);
 
+                if (isInWorld(player)) {
+                    sendMGCError(player, "You cannot edit spawnpoints while not editing your draft!");
+                    return true;
+                }
+
                 String option = args[1];
 
                 if (!(option.equals("add") || option.equals("remove"))) {
@@ -469,6 +483,11 @@ public final class GameCommand implements CommandExecutor {
 
                 rootFolder = new File(Bukkit.getWorldContainer(), folder.getName());
                 config = configManager.getConfigFromFolder(rootFolder);
+
+                if (isInWorld(player)) {
+                    sendMGCError(player, "You cannot edit spawnpoints while not editing your draft!");
+                    return true;
+                }
 
                 option = args[1];
 
