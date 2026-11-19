@@ -431,7 +431,7 @@ public final class GameCommand implements CommandExecutor {
                 rootFolder = new File(Bukkit.getWorldContainer(), folder.getName());
                 config = configManager.getConfigFromFolder(rootFolder);
 
-                if (isInWorld(player)) {
+                if (!isInWorld(player)) {
                     sendMGCError(player, "You cannot edit spawnpoints while not editing your draft!");
                     return true;
                 }
@@ -484,7 +484,7 @@ public final class GameCommand implements CommandExecutor {
                 rootFolder = new File(Bukkit.getWorldContainer(), folder.getName());
                 config = configManager.getConfigFromFolder(rootFolder);
 
-                if (isInWorld(player)) {
+                if (!isInWorld(player)) {
                     sendMGCError(player, "You cannot edit spawnpoints while not editing your draft!");
                     return true;
                 }

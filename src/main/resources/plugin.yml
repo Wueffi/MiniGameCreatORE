@@ -1,8 +1,9 @@
 name: MiniGameCreatORE
-version: '1.0-SNAPSHOT'
+version: '1.0.0'
 main: wueffi.miniGameCreatORE.MiniGameCreatORE
 api-version: '1.21'
 load: STARTUP
+depend: [MiniGameCore]
 authors: ["Waffle [Wueffi]"]
 description: Create MiniGames while still ingame!
 commands:

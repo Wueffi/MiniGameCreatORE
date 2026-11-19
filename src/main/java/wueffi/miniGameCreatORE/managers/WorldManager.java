@@ -133,6 +133,7 @@ public class WorldManager {
     }
 
     public static void moveToArchive(File folder) {
+        if (plugin == null) return;
         File gameWorldsFolder = new File(plugin.getDataFolder(), "gameWorlds");
         gameWorldsFolder.mkdirs();
         File destination = new File(gameWorldsFolder, folder.getName());
@@ -231,6 +232,6 @@ public class WorldManager {
         if (folder.exists()) WorldManager.moveToRoot(folder, folder.getName());
         World world = Bukkit.getWorld(folder.getName());
 
-        return player.getWorld() != world;
+        return player.getWorld() == world;
     }
 }
